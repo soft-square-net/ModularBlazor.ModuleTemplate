@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Sdk Name="soft.square.net.ModularBlazor.Module.Sdk" />
+
+  <!--
+    Web: the module's entry assembly and composition root, the one the runtime loads. It holds the IRuntimeModule
+    (ModuleNameModule.cs), the service registration (Configurations/), and the HTTP endpoints, one file per endpoint
+    (Notes/), mapped by ModuleNameRoutes, the module's only ICarterModule (the runtime maps the Carter modules of the
+    entry assembly only).
+    References UseCases and Infrastructure (to register them). Endpoints call use cases through Mediator, never the
+    Infrastructure layer.
+
+    Not referenced by the WebApi: zip this project's build output (bin/<Configuration>/net10.0, which holds every
+    layer and the private packages) and upload it to POST /api/admin/modules, or let the playground load it.
+
+    The name does not end in .Infrastructure, so the Module SDK treats it as a single-project module ("Module": Carter,
+    WebApi.Contracts, ASP.NET Core). ModuleUsesData adds WebApi.Data and the host's EF Core packages as compile-only
+    references, so nothing the Infrastructure layer depends on is copied into the output. EnableDynamicLoading writes
+    the .deps.json the module loader resolves with.
+  -->
+
+  <PropertyGroup>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <ModuleUsesData>true</ModuleUsesData>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Ardalis.Result" Version="$(ArdalisResultVersion)" />
+    <PackageReference Include="Mediator.Abstractions" Version="$(MediatorVersion)" />
+    <!-- Generates the module's mediator (handler table, AddMediator) into this assembly at compile time. -->
+    <PackageReference Include="Mediator.SourceGenerator" Version="$(MediatorVersion)" PrivateAssets="all"
+                      IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WebApi.Modules.ModuleName.UseCases\WebApi.Modules.ModuleName.UseCases.csproj" />
+    <ProjectReference Include="..\WebApi.Modules.ModuleName.Infrastructure\WebApi.Modules.ModuleName.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

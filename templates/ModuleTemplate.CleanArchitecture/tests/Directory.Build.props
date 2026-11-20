@@ -1,0 +1,39 @@
+<Project>
+  <!-- The module's settings (naming, target framework, private package versions), plus what every test project shares. -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <OutputType>Exe</OutputType>
+    <!-- Keep in step with global.json (the Module SDK version) and its Platform.props. -->
+    <ModularBlazorPlatformVersion Condition="'$(ModularBlazorPlatformVersion)' == ''">1.0.0-preview.2</ModularBlazorPlatformVersion>
+  </PropertyGroup>
+
+  <!-- The Ardalis template's test stack: xUnit v3, NSubstitute, Shouldly. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.12.0" />
+    <PackageReference Include="xunit.v3.mtp-off" Version="4.0.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1" PrivateAssets="all"
+                      IncludeAssets="runtime; build; native; modulenamefiles; analyzers; buildtransitive" />
+    <PackageReference Include="NSubstitute" Version="6.2.0" />
+    <PackageReference Include="Shouldly" Version="4.3.0" />
+  </ItemGroup>
+
+  <!--
+    The host-shared assemblies. The module's projects compile against them but never ship them (the host provides them
+    at run time), so a test process, which has no host, needs them itself. Same versions as the Module SDK's
+    HostSharedPackages.props.
+  -->
+  <ItemGroup>
+    <PackageReference Include="soft.square.net.WebApi.Contracts" Version="$(ModularBlazorPlatformVersion)" />
+    <PackageReference Include="soft.square.net.WebApi.SharedKernel" Version="$(ModularBlazorPlatformVersion)" />
+    <PackageReference Include="Ardalis.Specification" Version="9.3.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="NSubstitute" />
+    <Using Include="Shouldly" />
+    <Using Include="Xunit" />
+  </ItemGroup>
+</Project>

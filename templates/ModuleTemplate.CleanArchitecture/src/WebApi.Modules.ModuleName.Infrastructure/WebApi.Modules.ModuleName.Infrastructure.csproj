@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Sdk Name="soft.square.net.ModularBlazor.Module.Sdk" />
+
+  <!--
+    Infrastructure: the tenant DbContext (Data/ModuleNameDbContext.cs), the entity mappings (Data/Config) and the
+    migrations, one set per engine (Data/Migrations/<Provider>). References Core only.
+    The Module SDK compiles it against WebApi.Data (EF Core, TenantDbContext, repositories), provided by the host, and
+    makes it loadable on its own (EnableDynamicLoading), which dotnet-ef needs to add migrations to this project.
+    It is not the entry assembly: WebApi.Modules.ModuleName.Web is.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\WebApi.Modules.ModuleName.Core\WebApi.Modules.ModuleName.Core.csproj" />
+  </ItemGroup>
+
+</Project>

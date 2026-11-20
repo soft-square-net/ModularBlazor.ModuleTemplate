@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Sdk Name="soft.square.net.ModularBlazor.Module.Sdk" />
+
+  <!--
+    Core (the domain model): aggregates, their rules and their specifications, one folder per aggregate
+    (NoteAggregate). No references to other layers.
+    The Module SDK compiles it against WebApi.SharedKernel (AggregateRoot, DomainException, IRepository) and
+    Ardalis.Specification, both provided by the host. The name does not end in .Domain, so the layer is set here.
+  -->
+
+  <PropertyGroup>
+    <ModuleLayer>Domain</ModuleLayer>
+  </PropertyGroup>
+
+</Project>

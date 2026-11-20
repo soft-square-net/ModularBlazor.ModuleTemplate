@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Packs the templates under templates/ into one dotnet new template package:
+      dotnet pack -c Release -o artifacts
+      dotnet new install artifacts/soft.square.net.ModularBlazor.ModuleTemplate.<version>.nupkg
+    Each template is a folder with .template.config/template.json. No code is compiled here.
+  -->
+
+  <PropertyGroup>
+    <PackageType>Template</PackageType>
+    <PackageId>soft.square.net.ModularBlazor.ModuleTemplate</PackageId>
+    <Version>0.1.0</Version>
+    <Title>ModularBlazor module templates</Title>
+    <Authors>soft-square-net</Authors>
+    <Description>dotnet new templates for ModularBlazor runtime modules: platform-module-ca (Clean Architecture: Core, UseCases, Infrastructure, Web).</Description>
+    <PackageTags>dotnet-new;templates;modularblazor;clean-architecture</PackageTags>
+    <RepositoryUrl>https://github.com/soft-square-net/ModularBlazor.ModuleTemplate</RepositoryUrl>
+    <TargetFramework>net10.0</TargetFramework>
+
+    <IncludeContentInPack>true</IncludeContentInPack>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <ContentTargetFolders>content</ContentTargetFolders>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <!-- Keep dot-files (.gitignore, .github, .template.config) in the package. -->
+    <NoDefaultExcludes>true</NoDefaultExcludes>
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="templates\**\*"
+             Exclude="templates\**\bin\**;templates\**\obj\**;templates\**\.vs\**;templates\**\*.user;templates\**\playground\.data\**;templates\**\playground\out\**" />
+  </ItemGroup>
+
+</Project>

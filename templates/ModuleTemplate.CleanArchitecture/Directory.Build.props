@@ -1,0 +1,22 @@
+<Project>
+  <!-- The platform's naming: every assembly and root namespace is prefixed. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <SoftSquarePrefix>soft.square.net</SoftSquarePrefix>
+    <AssemblyName>$(SoftSquarePrefix).$(MSBuildProjectName)</AssemblyName>
+    <RootNamespace>$(SoftSquarePrefix).$(MSBuildProjectName)</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <!--
+    Versions of the module's private packages, in one place (the Ardalis template uses Central Package Management; the
+    Module SDK adds its own versioned PackageReferences, which CPM refuses, so the versions live here instead).
+    Private means: not shipped by the host, copied into the module's output, loaded in the module's own load context.
+  -->
+  <PropertyGroup>
+    <ArdalisResultVersion>10.1.0</ArdalisResultVersion>
+    <MediatorVersion>3.0.2</MediatorVersion>
+  </PropertyGroup>
+</Project>

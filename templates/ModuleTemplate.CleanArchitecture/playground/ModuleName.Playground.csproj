@@ -1,0 +1,55 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.6.4">
+
+  <!--
+    ModuleName playground: a small platform (PostgreSQL, identity, one WebApi, the Blazor client) with this repo's
+    module in it. See README.md, "Developing". The platform's projects come from a ModularBlazor.Platform checkout next
+    to this repo (<workspace>/Platform and <workspace>/Module.ModuleName); set PlatformRoot to use another one, e.g.
+    dotnet run -p:PlatformRoot=D:/src/Platform/.
+    Not in the solution on purpose: CI builds the module without a platform checkout.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <UserSecretsId>modularblazor-modulename-playground</UserSecretsId>
+    <PlatformRoot Condition="'$(PlatformRoot)' == ''">$(MSBuildThisFileDirectory)..\..\Platform\</PlatformRoot>
+    <!-- The module's entry project (IRuntimeModule, endpoints); its build output holds every layer. -->
+    <ModuleProject>..\src\WebApi.Modules.ModuleName.Web\WebApi.Modules.ModuleName.Web.csproj</ModuleProject>
+    <ModuleOutput>$(MSBuildThisFileDirectory)..\src\WebApi.Modules.ModuleName.Web\bin\$(Configuration)\net10.0\</ModuleOutput>
+    <!-- Install loop: the module's build output, zipped like an upload (out/ is git-ignored). -->
+    <ModulePackage>$(MSBuildThisFileDirectory)out\modulename.zip</ModulePackage>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Keep in step with the Aspire SDK version above (and with the platform's Hybird app host). -->
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="13.6.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The platform, from source. -->
+    <ProjectReference Include="$(PlatformRoot)src\WebApi\WebApi\WebApi.csproj" />
+    <ProjectReference Include="$(PlatformRoot)src\WebApi\Identity\WebApi.Identity.Server\WebApi.Identity.Server.csproj" />
+    <ProjectReference Include="$(PlatformRoot)src\apps\blazor\ModularBlazor.BlzWebClient\ModularBlazor.BlzWebClient.csproj" />
+    <!-- The module: built before the playground starts, never referenced or run as a project (the WebApi loads it). -->
+    <ProjectReference Include="$(ModuleProject)" IsAspireProjectResource="false" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Paths for AppHost.cs. -->
+    <AssemblyMetadata Include="ModuleOutput" Value="$([System.IO.Path]::GetFullPath('$(ModuleOutput)'))" />
+    <AssemblyMetadata Include="ModulePackage" Value="$([System.IO.Path]::GetFullPath('$(ModulePackage)'))" />
+    <AssemblyMetadata Include="PlaygroundData" Value="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory).data'))" />
+  </ItemGroup>
+
+  <Target Name="CheckPlatformCheckout" BeforeTargets="CollectPackageReferences;Restore;Build">
+    <Error Condition="!Exists('$(PlatformRoot)src\WebApi\WebApi\WebApi.csproj')"
+           Text="No ModularBlazor.Platform checkout at '$(PlatformRoot)'. Clone https://github.com/soft-square-net/ModularBlazor.Platform next to this repo (as 'Platform'), or pass -p:PlatformRoot=&lt;path to it&gt;/." />
+  </Target>
+
+  <!-- After every build, the server part zipped for the Host Modules page (install loop; the dev loop loads it directly). -->
+  <Target Name="PackModuleForUpload" AfterTargets="Build">
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(ModulePackage)'))" />
+    <ZipDirectory SourceDirectory="$(ModuleOutput)" DestinationFile="$(ModulePackage)" Overwrite="true" />
+    <Message Importance="high" Text="Module package for upload: $([System.IO.Path]::GetFullPath('$(ModulePackage)'))" />
+  </Target>
+
+</Project>

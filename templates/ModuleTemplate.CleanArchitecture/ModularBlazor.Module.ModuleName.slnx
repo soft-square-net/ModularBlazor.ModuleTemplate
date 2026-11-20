@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/WebApi.Modules.ModuleName.Core/WebApi.Modules.ModuleName.Core.csproj" />
+    <Project Path="src/WebApi.Modules.ModuleName.UseCases/WebApi.Modules.ModuleName.UseCases.csproj" />
+    <Project Path="src/WebApi.Modules.ModuleName.Infrastructure/WebApi.Modules.ModuleName.Infrastructure.csproj" />
+    <Project Path="src/WebApi.Modules.ModuleName.Web/WebApi.Modules.ModuleName.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/WebApi.Modules.ModuleName.UnitTests/WebApi.Modules.ModuleName.UnitTests.csproj" />
+    <Project Path="tests/WebApi.Modules.ModuleName.IntegrationTests/WebApi.Modules.ModuleName.IntegrationTests.csproj" />
+  </Folder>
+</Solution>

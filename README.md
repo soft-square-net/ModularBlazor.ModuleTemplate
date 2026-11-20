@@ -3,17 +3,39 @@
 The `dotnet new` template for new [ModularBlazor](https://github.com/soft-square-net/ModularBlazor) modules. A new module starts here, in its own repo, with
 the layout the platform's installer expects and a playground to run it in.
 
-> **Status: scaffold.** The template is written once the platform publishes its contract packages and container
-> images, which it builds on.
+> **Status:** `platform-module-ca` (Clean Architecture, server part) is available. The layered `platform-module`
+> template with the API client and Blazor UI below is still planned.
 
-## Planned use
+## platform-module-ca: Clean Architecture
+
+`templates/ModuleTemplate.CleanArchitecture` is a runtime module in Ardalis Clean Architecture layers, taken from the
+platform's Content module: Core, UseCases (Mediator commands and queries returning Ardalis Results), Infrastructure
+(tenant DbContext, migrations for PostgreSQL, SQL Server, MySQL and Oracle) and Web (entry assembly, Carter endpoints,
+one class per route). Its example is a `Note` aggregate with add, edit, delete, get, list and search, plus unit and
+integration tests and an Aspire playground. See its README and `docs/clean-architecture.md`.
 
 ```bash
-dotnet new install ModularBlazor.ModuleTemplate
-dotnet new platform-module -n Billing
+dotnet pack ModularBlazor.ModuleTemplate.csproj -c Release -o artifacts
 ```
 
-## What a generated module contains
+```bash
+dotnet new install artifacts/soft.square.net.ModularBlazor.ModuleTemplate.0.1.0.nupkg
+```
+
+```bash
+dotnet new platform-module-ca -n Billing -o Module.Billing
+```
+
+`-n` is the module's name in PascalCase, one word (`Billing`, `Inventory`). It replaces `ModuleName` everywhere:
+projects (`WebApi.Modules.Billing.Web`), namespaces, types (`BillingModule`, `BillingDbContext`), and in lower case the
+module id, route prefix, database schema and permissions (`billing`, `/api/billing`, `billing.read`). Generate it next
+to the Platform checkout (`<workspace>/Module.Billing`) so its playground finds the platform.
+
+## Planned: platform-module
+
+```bash
+dotnet new platform-module -n Billing
+```
 
 ```
 src/<Name>.Domain/ .Application/ .Infrastructure/   server part (Infrastructure is the entry assembly)
@@ -27,7 +49,9 @@ tests/
 ## Layout of this repo
 
 ```
-templates/platform-module/   the template content (.template.config/template.json + the files above)
+templates/ModuleTemplate.CleanArchitecture/   platform-module-ca (.template.config/template.json + the module)
+templates/platform-module/                    planned
+ModularBlazor.ModuleTemplate.csproj           packs every template into one dotnet new package
 ```
 
 ## How it builds and ships
