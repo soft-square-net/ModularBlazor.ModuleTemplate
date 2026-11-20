@@ -90,7 +90,10 @@ A new action on notes, say "pin":
    clients take their method names from it.
 4. **Infrastructure**, if the model changed: the mapping in `Data/Config`, then a migration for every provider (see
    the README) and `dotnet ef migrations has-pending-model-changes` per provider.
-5. **Tests**: the rule in `UnitTests/Core`, the handler in `UnitTests/UseCases`, a new mapping or specification in
+5. **Client**: export the OpenAPI document again (README, "Building") and build: `ModuleNameClient` gains
+   `PinNoteAsync`. Use it from a page in `Module.ModuleName` (pages inherit `ModuleNamePageBase`: `Api`, `RunAsync`,
+   readable errors).
+6. **Tests**: the rule in `UnitTests/Core`, the handler in `UnitTests/UseCases`, a new mapping or specification in
    `IntegrationTests`.
 
 A new aggregate gets its own `<Name>Aggregate` folder in Core, a resource folder in UseCases and in Web, a `DbSet`

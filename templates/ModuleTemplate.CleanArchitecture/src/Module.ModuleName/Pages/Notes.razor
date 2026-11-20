@@ -1,0 +1,219 @@
+@page "/modulename"
+@inherits ModuleNamePageBase
+
+@*
+  The example page of the module: the tenant's notes a page at a time (GET /api/modulename/notes), a search over title
+  and body (GET /api/modulename/notes/search), and a form to add (POST), edit (PUT) and delete (DELETE ?version=) one.
+  A row opens the note in the form. Replace it with your module's own pages.
+*@
+
+<PageTitle>Notes</PageTitle>
+
+<div class="mud-container mn-page">
+  <header class="mn-header">
+    <div>
+      <h1 class="mud-typography mud-typography-h4">Notes</h1>
+      <p class="mud-typography mud-typography-body1 mn-muted">
+        Notes of your organisation. Reading needs modulename.read, adding, editing and deleting modulename.write.
+      </p>
+    </div>
+    <form class="mn-actions" @onsubmit="SearchAsync" @onsubmit:preventDefault>
+      <div class="mud-input-control mn-inline">
+        <label class="mud-input-label" for="mn-search">Search</label>
+        <div class="mud-input-wrapper mud-input-wrapper--dense">
+          <input id="mn-search" type="search" class="mud-input-slot" @bind="_search" placeholder="at least 2 characters" />
+        </div>
+      </div>
+      <button type="submit" class="mud-button-root mud-button-outlined mud-button-primary mud-button-medium" disabled="@Busy">Search</button>
+      @if (_searching is not null)
+      {
+        <button type="button" class="mud-button-root mud-button-text mud-button-surface mud-button-medium" @onclick="ClearSearchAsync" disabled="@Busy">Clear</button>
+      }
+      <button type="button" class="mud-button-root mud-button-filled mud-button-primary mud-button-medium" @onclick="OpenCreate" disabled="@Busy">New note</button>
+    </form>
+  </header>
+
+  @if (Error is not null)
+  {
+    <p class="mud-typography mud-typography-body2 mn-error" role="alert">@Error</p>
+  }
+
+  @if (_form is not null)
+  {
+    <section class="mud-paper mud-elevation-2 mn-card">
+      <h2 class="mud-typography mud-typography-h6">@(_form.Id is null ? "New note" : $"Note #{_form.Id}")</h2>
+      <form class="mn-form" @onsubmit="SaveAsync" @onsubmit:preventDefault>
+        <div class="mud-input-control">
+          <label class="mud-input-label" for="mn-title">Title</label>
+          <div class="mud-input-wrapper">
+            <input id="mn-title" class="mud-input-slot" @bind="_form.Title" required maxlength="200" />
+          </div>
+        </div>
+        <div class="mud-input-control">
+          <label class="mud-input-label" for="mn-body">Body</label>
+          <div class="mud-input-wrapper">
+            <textarea id="mn-body" class="mud-input-slot mn-body" rows="6" maxlength="2000" @bind="_form.Body"></textarea>
+          </div>
+          @if (_form.Id is not null)
+          {
+            <div class="mud-input-helper-text">Version @_form.Version. Saving or deleting fails if someone changed it meanwhile.</div>
+          }
+        </div>
+        <div class="mn-row-actions">
+          <button type="submit" class="mud-button-root mud-button-filled mud-button-primary mud-button-medium" disabled="@Busy">
+            @(_form.Id is null ? "Add" : "Save")
+          </button>
+          @if (_form.Id is not null)
+          {
+            <button type="button" class="mud-button-root mud-button-outlined mud-button-error mud-button-medium" @onclick="DeleteAsync" disabled="@Busy">Delete</button>
+          }
+          <button type="button" class="mud-button-root mud-button-text mud-button-surface mud-button-medium" @onclick="() => _form = null">Cancel</button>
+        </div>
+      </form>
+    </section>
+  }
+
+  <section class="mud-paper mud-elevation-1 mn-card">
+    @if (_searching is not null)
+    {
+      <p class="mud-typography mud-typography-body2 mn-muted">Results for “@_searching”.</p>
+    }
+    <MudTailDataTable @ref="_table" Columns="Columns" OnRowClick="OpenEditAsync" EmptyText="No notes here." />
+    <div class="mn-pager">
+      <span class="mud-typography mud-typography-body2 mn-muted">@PagerText</span>
+      <button type="button" class="mud-button-root mud-button-outlined mud-button-primary mud-button-small" @onclick="() => GoToAsync(_page - 1)" disabled="@(Busy || _page <= 1)">Previous</button>
+      <button type="button" class="mud-button-root mud-button-outlined mud-button-primary mud-button-small" @onclick="() => GoToAsync(_page + 1)" disabled="@(Busy || _page >= LastPage)">Next</button>
+    </div>
+  </section>
+</div>
+
+@code {
+  private const int PageSize = 20;
+
+  private sealed class NoteForm
+  {
+    public int? Id { get; init; }
+    public int Version { get; init; }
+    public string Title { get; set; } = "";
+    public string? Body { get; set; }
+  }
+
+  private static readonly IReadOnlyList<object> Columns =
+  [
+    new { key = "id", title = "#", type = "number", width = "80px" },
+    new { key = "title", title = "Title" },
+    new { key = "body", title = "Body" },
+    new { key = "updated", title = "Updated", width = "170px" },
+  ];
+
+  private MudTailDataTable? _table;
+  private int _page = 1;
+  private int _total;
+  private string _search = "";
+  private string? _searching; // the search the table shows; null: the plain list
+  private NoteForm? _form;
+
+  private int LastPage => Math.Max(1, (_total + PageSize - 1) / PageSize);
+
+  private string PagerText => _total == 0 ? "" : $"Page {_page} of {LastPage} ({_total} notes)";
+
+  protected override async Task OnAfterRenderAsync(bool firstRender)
+  {
+    if (firstRender) await LoadAsync();
+  }
+
+  private async Task LoadAsync()
+  {
+    await RunAsync(async () =>
+    {
+      var result = _searching is null
+        ? await Api.ListNotesAsync(_page, PageSize)
+        : await Api.SearchNotesAsync(_searching, _page, PageSize);
+      _total = result.Total;
+      if (_table is not null) await _table.SetDataAsync(result.Items.Select(ToRow).ToList());
+    });
+  }
+
+  private static object ToRow(NoteDto n) => new
+  {
+    id = n.Id.ToString(),
+    title = n.Title,
+    body = Shorten(n.Body),
+    updated = When(n.UpdatedAt),
+  };
+
+  private static string Shorten(string? text)
+    => string.IsNullOrEmpty(text) ? "" : text.Length <= 80 ? text : string.Concat(text.AsSpan(0, 79), "…");
+
+  private async Task GoToAsync(int page)
+  {
+    _page = Math.Clamp(page, 1, LastPage);
+    await LoadAsync();
+  }
+
+  private async Task SearchAsync()
+  {
+    var text = _search.Trim();
+    if (text.Length < 2)
+    {
+      await MudTail.ToastAsync("Type at least 2 characters to search.", "warning");
+      return;
+    }
+    _searching = text;
+    _page = 1;
+    await LoadAsync();
+  }
+
+  private async Task ClearSearchAsync()
+  {
+    _search = "";
+    _searching = null;
+    _page = 1;
+    await LoadAsync();
+  }
+
+  private void OpenCreate() => _form = new NoteForm();
+
+  private async Task OpenEditAsync(string id)
+  {
+    if (!int.TryParse(id, out var noteId)) return;
+    await RunAsync(async () =>
+    {
+      var note = await Api.GetNoteAsync(noteId);
+      _form = new NoteForm { Id = note.Id, Version = note.Version, Title = note.Title, Body = note.Body };
+    });
+  }
+
+  private async Task SaveAsync()
+  {
+    if (_form is null) return;
+    var form = _form;
+    var body = string.IsNullOrWhiteSpace(form.Body) ? null : form.Body;
+    await RunAsync(async () =>
+    {
+      if (form.Id is int id)
+      {
+        await Api.EditNoteAsync(id, new NoteEdit { Version = form.Version, Title = form.Title.Trim(), Body = body });
+        await MudTail.ToastAsync($"Note #{id} saved.", "success");
+      }
+      else
+      {
+        var created = await Api.CreateNoteAsync(new NewNote { Title = form.Title.Trim(), Body = body });
+        await MudTail.ToastAsync($"Note #{created.Id} added.", "success");
+      }
+      _form = null;
+    }, then: LoadAsync);
+  }
+
+  private async Task DeleteAsync()
+  {
+    if (_form?.Id is not int id) return;
+    var version = _form.Version;
+    await RunAsync(async () =>
+    {
+      await Api.DeleteNoteAsync(id, version);
+      await MudTail.ToastAsync($"Note #{id} deleted.", "success");
+      _form = null;
+    }, then: LoadAsync);
+  }
+}

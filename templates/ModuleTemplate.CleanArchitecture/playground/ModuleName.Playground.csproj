@@ -29,14 +29,19 @@
     <ProjectReference Include="$(PlatformRoot)src\WebApi\WebApi\WebApi.csproj" />
     <ProjectReference Include="$(PlatformRoot)src\WebApi\Identity\WebApi.Identity.Server\WebApi.Identity.Server.csproj" />
     <ProjectReference Include="$(PlatformRoot)src\apps\blazor\ModularBlazor.BlzWebClient\ModularBlazor.BlzWebClient.csproj" />
-    <!-- The module: built before the playground starts, never referenced or run as a project (the WebApi loads it). -->
+    <!-- The module: built before the playground starts, never referenced or run as a project (the WebApi loads it;
+         the client parts are installed from their build output in the dev loop, uploaded in the install loop). -->
     <ProjectReference Include="$(ModuleProject)" IsAspireProjectResource="false" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\src\WebApi.Modules.ModuleName.Client\WebApi.Modules.ModuleName.Client.csproj" IsAspireProjectResource="false" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\src\Module.ModuleName\Module.ModuleName.csproj" IsAspireProjectResource="false" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>
     <!-- Paths for AppHost.cs. -->
     <AssemblyMetadata Include="ModuleOutput" Value="$([System.IO.Path]::GetFullPath('$(ModuleOutput)'))" />
     <AssemblyMetadata Include="ModulePackage" Value="$([System.IO.Path]::GetFullPath('$(ModulePackage)'))" />
+    <AssemblyMetadata Include="ApiClientOutput" Value="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\src\WebApi.Modules.ModuleName.Client\bin\$(Configuration)\net10.0\soft.square.net.WebApi.Modules.ModuleName.Client.dll'))" />
+    <AssemblyMetadata Include="UiOutput" Value="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\src\Module.ModuleName\bin\$(Configuration)\net10.0\soft.square.net.Module.ModuleName.dll'))" />
     <AssemblyMetadata Include="PlaygroundData" Value="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory).data'))" />
   </ItemGroup>
 
@@ -45,11 +50,18 @@
            Text="No ModularBlazor.Platform checkout at '$(PlatformRoot)'. Clone https://github.com/soft-square-net/ModularBlazor.Platform next to this repo (as 'Platform'), or pass -p:PlatformRoot=&lt;path to it&gt;/." />
   </Target>
 
-  <!-- After every build, the server part zipped for the Host Modules page (install loop; the dev loop loads it directly). -->
+  <!-- After every build, the module's parts ready to upload (install loop; the dev loop loads them directly):
+         out/modulename.zip    server part, for the Host Modules page
+         out/client/*.dll      client parts, for the Client Modules page: the API client (hidden) first, then the UI -->
   <Target Name="PackModuleForUpload" AfterTargets="Build">
-    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(ModulePackage)'))" />
+    <ItemGroup>
+      <_ClientPart Include="$(MSBuildThisFileDirectory)..\src\WebApi.Modules.ModuleName.Client\bin\$(Configuration)\net10.0\soft.square.net.WebApi.Modules.ModuleName.Client.dll" />
+      <_ClientPart Include="$(MSBuildThisFileDirectory)..\src\Module.ModuleName\bin\$(Configuration)\net10.0\soft.square.net.Module.ModuleName.dll" />
+    </ItemGroup>
+    <MakeDir Directories="$(MSBuildThisFileDirectory)out\client" />
     <ZipDirectory SourceDirectory="$(ModuleOutput)" DestinationFile="$(ModulePackage)" Overwrite="true" />
-    <Message Importance="high" Text="Module package for upload: $([System.IO.Path]::GetFullPath('$(ModulePackage)'))" />
+    <Copy SourceFiles="@(_ClientPart)" DestinationFolder="$(MSBuildThisFileDirectory)out\client" SkipUnchangedFiles="true" />
+    <Message Importance="high" Text="Module parts for upload: $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)out'))" />
   </Target>
 
 </Project>

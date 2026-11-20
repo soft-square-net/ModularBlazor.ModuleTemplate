@@ -1,11 +1,12 @@
 // ModuleName playground: a small platform with this repo's module in it, for local development. Two loops:
 //
-//   dev (default, launch profile "dev"): the WebApi loads the module straight from its build output (Modules:Local,
-//     Development only). Change code, rebuild, restart the "webapi" resource in the dashboard (or F5 again): the new
+//   dev (default, launch profile "dev"): the WebApi loads the module, and its client parts, straight from their build
+//     output (Modules:Local and ClientModules:Local, Development only). Change code, rebuild, restart the "webapi" resource in the dashboard (or F5 again): the new
 //     build is installed and active, with no packing or uploading.
 //   install (launch profile "install"): the platform starts without the module, as in production. Every build zips
-//     the module to playground/out/modulename.zip; upload it on the client's Host Modules page (http://localhost:5070,
-//     sign in as the dev platform admin) and activate it. This runs the real install path before a release.
+//     the module to playground/out/modulename.zip and copies its client parts to playground/out/client; upload the zip on
+//     the client's Host Modules page (http://localhost:5070, sign in as the dev platform admin) and activate it, then
+//     the two dlls on the Client Modules page (the API client first). This runs the real install path before a release.
 //
 //   postgres ─► identity (5090)    tenant store + tenant databases + identity database, one server
 //            └► webapi (5080)  ◄── blzwebclient (5070)
@@ -78,7 +79,15 @@ var webApi = builder.AddProject<Projects.WebApi>("webapi", launchProfileName: nu
     .WaitFor(identity)
     .WithHttpHealthCheck("/health");
 if (mode == "dev")
-    webApi.WithEnvironment("Modules__Local__modulename", Metadata("ModuleOutput"));
+{
+    // The server part from its build output (Modules:Local), and the client parts too (the client-modules module's
+    // ClientModules:Local, set through a host override): every start installs what changed, the API client first.
+    // Sign in on http://localhost:5070 as acme-admin@modular.local and open ModuleName (/modulename).
+    const string ClientLocal = "Modules__Settings__client-modules__ClientModules__Local__";
+    webApi.WithEnvironment("Modules__Local__modulename", Metadata("ModuleOutput"))
+        .WithEnvironment(ClientLocal + "WebApi.Modules.ModuleName.Client", Metadata("ApiClientOutput"))
+        .WithEnvironment(ClientLocal + "Module.ModuleName", Metadata("UiOutput"));
+}
 
 builder.AddProject<Projects.ModularBlazor_BlzWebClient>("blzwebclient", launchProfileName: null)
     .WithHttpEndpoint(port: ClientPort)
@@ -87,7 +96,7 @@ builder.AddProject<Projects.ModularBlazor_BlzWebClient>("blzwebclient", launchPr
     .WaitFor(webApi);
 
 if (mode == "install")
-    Console.WriteLine($"Install loop: upload {Metadata("ModulePackage")} on {ClientOrigin}/host-modules, then activate it.");
+    Console.WriteLine($"Install loop: upload {Metadata("ModulePackage")} on {ClientOrigin}/host-modules and activate it, then the client parts (out/client, API client first) on {ClientOrigin}/client-modules.");
 
 builder.Build().Run();
 

@@ -1,0 +1,15 @@
+/* Module.ModuleName: layout around MudTail's components. Colours come from the --mud-palette-* tokens of Layouts.Default. */
+.mn-page { padding-block: 8px 32px; }
+.mn-header { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between; margin-bottom: 16px; }
+.mn-header h1 { margin: 0 0 4px; }
+.mn-header p { max-width: 72ch; margin: 0; }
+.mn-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.mn-inline { margin: 0; min-width: 220px; }
+.mn-muted { color: var(--mud-palette-text-secondary); }
+.mn-error { color: var(--mud-palette-error); }
+.mn-card { padding: 20px; margin-bottom: 16px; border-radius: var(--mud-default-borderradius, 8px); }
+.mn-card h2 { margin: 0 0 12px; }
+.mn-form { display: grid; gap: 4px; }
+.mn-body { min-height: 8em; resize: vertical; font: inherit; }
+.mn-row-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.mn-pager { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: flex-end; margin-top: 12px; }

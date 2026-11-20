@@ -12,6 +12,18 @@
   },
   "sourceName": "ModuleName",
   "preferNameDirectory": true,
+  "symbols": {
+    "moduleIdLower": {
+      "type": "derived",
+      "valueSource": "name",
+      "valueTransform": "lowerCaseTransform",
+      "fileRename": "modulename",
+      "description": "The module id in file names (openapi/modulename.json, wwwroot/modulename.css); the sourceName renames only its own casing in file names."
+    }
+  },
+  "forms": {
+    "lowerCaseTransform": { "identifier": "lowerCase" }
+  },
   "sources": [
     {
       "modifiers": [
