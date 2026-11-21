@@ -209,6 +209,9 @@ DocProject/Help/html
 
 # Click-Once directory
 publish/
+# ...but not source folders named Publish (a use case, an endpoint): build output under bin/ stays ignored.
+!src/**/[Pp]ublish/
+!tests/**/[Pp]ublish/
 
 # Publish Web Output
 *.[Pp]ublish.xml
