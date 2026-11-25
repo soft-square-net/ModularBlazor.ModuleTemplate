@@ -40,6 +40,27 @@ In the Blazor client, the **ModuleName** menu entry opens the Notes page (`/modu
 a search box, and a form to add a note or, from a row, edit or delete it. It calls the API through
 `ModuleNameClient`, so what a user may do is what the API allows; its errors (403, 409, ...) show as messages.
 
+## Integration events and live updates
+
+The example also shows the platform's events (ModularBlazor 1.0.0-preview.7 or later):
+
+- **Publishing.** `EditNoteHandler` publishes `modulename.note-edited.v1` through `IIntegrationEvents`. `Publish` only
+  adds a row to the module's outbox, which the same save writes with the change. The row is sent after that save
+  commits, and never when it fails.
+- **Subscribing.** `NoteEditedLiveHandler` (UseCases/Notes/Events) handles the module's own `modulename.note-*.v1`
+  events. It is registered in `ServiceConfigs` with `AddIntegrationHandler`, and the same pattern is in the manifest's
+  `Subscriptions`. Handlers run once per event (the module's inbox), in a tenant scope. They do not call SaveChanges.
+- **Live updates.** The handler pushes `note-edited` to the live topic `modulename:note:{id}`. The manifest declares the
+  topic kind with the permission a browser needs (`LiveTopics`: `note` with `modulename.read`). A page subscribes
+  through `ILiveChannel`.
+- **Data.** `ModuleNameDbContext` maps the outbox and inbox (`UsesIntegrationEvents => true`, the tables
+  `integration_outbox` and `integration_inbox`, migration `IntegrationEvents`). `AddInfrastructureServices` calls
+  `AddIntegrationEvents<ModuleNameDbContext>()`.
+
+All names are in `UseCases/ModuleNameEvents.cs`. A module that neither publishes nor subscribes removes
+`UsesIntegrationEvents`, the `IntegrationEvents` migrations, `AddIntegrationEvents`, the handler, `Subscriptions` and
+`LiveTopics`.
+
 ## Building
 
 ```bash

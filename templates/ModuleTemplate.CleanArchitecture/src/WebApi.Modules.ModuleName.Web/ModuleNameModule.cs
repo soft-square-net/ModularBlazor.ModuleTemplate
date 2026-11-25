@@ -17,7 +17,11 @@ public sealed class ModuleNameModule : IRuntimeModule
     {
         Description = "ModuleName: notes per tenant (the template's example; replace with the module's own features).",
         DefaultSettings = new Dictionary<string, string?> { ["ModuleName:MaxPageSize"] = "100" },
-        Permissions = ModuleNamePermissions.All
+        Permissions = ModuleNamePermissions.All,
+        // Integration event patterns this module handles: the host binds the module's queue to them at install.
+        Subscriptions = ModuleNameEvents.Subscriptions,
+        // Live topic kinds (modulename:note:{id}) and the permission a browser needs to subscribe to one.
+        LiveTopics = ModuleNameEvents.LiveTopicKinds
     };
 
     public void ConfigureServices(IServiceCollection services, IConfiguration settings) => services.AddServiceConfigs(settings);

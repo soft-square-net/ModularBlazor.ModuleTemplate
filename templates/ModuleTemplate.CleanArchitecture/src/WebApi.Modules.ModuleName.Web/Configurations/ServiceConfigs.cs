@@ -1,6 +1,9 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using soft.square.net.WebApi.Contracts.Messaging;
 using soft.square.net.WebApi.Modules.ModuleName.Infrastructure;
+using soft.square.net.WebApi.Modules.ModuleName.UseCases;
+using soft.square.net.WebApi.Modules.ModuleName.UseCases.Notes.Events;
 
 namespace soft.square.net.WebApi.Modules.ModuleName.Web.Configurations;
 
@@ -15,7 +18,10 @@ public static class ServiceConfigs
         services.Configure<ModuleNameOptions>(settings.GetSection("ModuleName"));
         services.AddInfrastructureServices();
 
-        // Services shared by several use cases go here (AddScoped<...>()); handlers themselves need no registration.
+        // Services shared by several use cases go here (AddScoped<...>()); Mediator handlers need no registration.
+
+        // Integration event handlers, by event type pattern; the same patterns are the manifest's Subscriptions.
+        services.AddIntegrationHandler<NoteEditedLiveHandler>(ModuleNameEvents.AnyNoteEvent);
 
         services.AddMediatorSourceGen();
         return services;

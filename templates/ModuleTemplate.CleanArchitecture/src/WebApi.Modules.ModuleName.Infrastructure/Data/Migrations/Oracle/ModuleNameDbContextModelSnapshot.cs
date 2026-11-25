@@ -22,6 +22,70 @@ namespace soft.square.net.WebApi.Modules.ModuleName.Infrastructure.Data.Migratio
 
             OracleModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("soft.square.net.WebApi.Data.Messaging.InboxMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("RAW(16)");
+
+                    b.Property<DateTimeOffset>("ProcessedAt")
+                        .HasColumnType("TIMESTAMP(7) WITH TIME ZONE");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("NVARCHAR2(100)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("NVARCHAR2(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProcessedAt");
+
+                    b.ToTable("modulename_integration_inbox", (string)null);
+                });
+
+            modelBuilder.Entity("soft.square.net.WebApi.Data.Messaging.OutboxMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("RAW(16)");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("NUMBER(10)");
+
+                    b.Property<string>("Envelope")
+                        .IsRequired()
+                        .HasColumnType("NVARCHAR2(2000)");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(1000)
+                        .HasColumnType("NVARCHAR2(1000)");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("TIMESTAMP(7) WITH TIME ZONE");
+
+                    b.Property<DateTimeOffset?>("SentAt")
+                        .HasColumnType("TIMESTAMP(7) WITH TIME ZONE");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("NVARCHAR2(64)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("NVARCHAR2(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SentAt", "OccurredAt");
+
+                    b.ToTable("modulename_integration_outbox", (string)null);
+                });
+
             modelBuilder.Entity("soft.square.net.WebApi.Modules.ModuleName.Core.NoteAggregate.Note", b =>
                 {
                     b.Property<int>("Id")

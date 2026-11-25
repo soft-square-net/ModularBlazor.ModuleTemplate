@@ -1,5 +1,6 @@
 using Ardalis.Specification;
 using Microsoft.Extensions.Options;
+using soft.square.net.WebApi.Contracts.Messaging;
 using soft.square.net.WebApi.Modules.ModuleName.Core.NoteAggregate;
 using soft.square.net.WebApi.Modules.ModuleName.UseCases;
 using soft.square.net.WebApi.Modules.ModuleName.UseCases.Notes.Create;
@@ -17,6 +18,7 @@ public class NoteHandlers
     private readonly IRepository<Note> _notes = Substitute.For<IRepository<Note>>();
     private readonly IReadRepository<Note> _reader = Substitute.For<IReadRepository<Note>>();
     private readonly IAccessScopes _access = Substitute.For<IAccessScopes>();
+    private readonly IIntegrationEvents _events = Substitute.For<IIntegrationEvents>();
     private readonly TestClock _clock = new();
     private readonly IOptions<ModuleNameOptions> _options = Options.Create(new ModuleNameOptions { MaxPageSize = 50 });
 
@@ -56,7 +58,7 @@ public class NoteHandlers
     [Fact]
     public async Task EditIsNotFoundForAMissingNote()
     {
-        var result = await new EditNoteHandler(_notes, _clock).Handle(new EditNoteCommand(7, 0, "Title", null), Ct);
+        var result = await new EditNoteHandler(_notes, _events, _clock).Handle(new EditNoteCommand(7, 0, "Title", null), Ct);
 
         result.Status.ShouldBe(ResultStatus.NotFound);
     }
@@ -66,10 +68,11 @@ public class NoteHandlers
     {
         Stored(version: 2);
 
-        var result = await new EditNoteHandler(_notes, _clock).Handle(new EditNoteCommand(1, 1, "New", null), Ct);
+        var result = await new EditNoteHandler(_notes, _events, _clock).Handle(new EditNoteCommand(1, 1, "New", null), Ct);
 
         result.Status.ShouldBe(ResultStatus.Conflict);
         await _notes.DidNotReceiveWithAnyArgs().UpdateAsync(default!, Ct);
+        _events.DidNotReceiveWithAnyArgs().Publish(default!, default!, default!);
     }
 
     [Fact]
@@ -78,13 +81,30 @@ public class NoteHandlers
         var note = Stored();
         _clock.Advance(TimeSpan.FromMinutes(1));
 
-        var result = await new EditNoteHandler(_notes, _clock).Handle(new EditNoteCommand(1, 0, "New", "text"), Ct);
+        var result = await new EditNoteHandler(_notes, _events, _clock).Handle(new EditNoteCommand(1, 0, "New", "text"), Ct);
 
         result.IsSuccess.ShouldBeTrue();
         result.Value.Title.ShouldBe("New");
         result.Value.Version.ShouldBe(1);
         result.Value.UpdatedAt.ShouldBe(TestClock.Start.AddMinutes(1));
         await _notes.Received(1).UpdateAsync(note, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task EditPublishesNoteEditedBeforeTheSave()
+    {
+        var note = Stored();
+        var order = new List<string>();
+        _events.When(e => e.Publish(Arg.Any<string>(), Arg.Any<object>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string?>()))
+            .Do(_ => order.Add("publish"));
+        _notes.When(n => n.UpdateAsync(Arg.Any<Note>(), Arg.Any<CancellationToken>())).Do(_ => order.Add("save"));
+
+        await new EditNoteHandler(_notes, _events, _clock).Handle(new EditNoteCommand(1, 0, "New", null), Ct);
+
+        // Publish only adds an outbox row; the save that follows writes it with the change.
+        order.ShouldBe(["publish", "save"]);
+        _events.Received(1).Publish(ModuleNameEvents.NoteEdited, Arg.Is<NoteEdited>(e => e.Version == 1 && e.Title == "New"),
+            ModuleNameEvents.NoteSubject(note.Id), Arg.Any<string?>(), Arg.Any<string?>());
     }
 
     [Fact]
