@@ -7,7 +7,7 @@
     <IsTestProject>true</IsTestProject>
     <OutputType>Exe</OutputType>
     <!-- Keep in step with global.json (the Module SDK version) and its Platform.props. -->
-    <ModularBlazorPlatformVersion Condition="'$(ModularBlazorPlatformVersion)' == ''">1.0.0-preview.5</ModularBlazorPlatformVersion>
+    <ModularBlazorPlatformVersion Condition="'$(ModularBlazorPlatformVersion)' == ''">1.0.0-preview.7</ModularBlazorPlatformVersion>
   </PropertyGroup>
 
   <!-- The Ardalis template's test stack: xUnit v3, NSubstitute, Shouldly. -->
