@@ -1,0 +1,51 @@
+# CI for the template repo itself. (The build.yml under templates/ is the one a generated module gets; GitHub only
+# runs workflows from the repo's root .github folder.) Packs the templates, creates a module from the package, then
+# builds and tests that module against the platform's packages, as its own CI would.
+name: Template
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  template:
+    runs-on: ubuntu-latest
+    env:
+      # The generated module's NuGet.Config reads the feed's token from here.
+      GITHUB_PACKAGES_TOKEN: ${{ secrets.PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Pack the template package
+        run: dotnet pack ModularBlazor.ModuleTemplate.csproj -c Release -o artifacts
+
+      - name: Create a module from the package
+        run: |
+          dotnet new install artifacts/*.nupkg
+          # Outside the checkout, so nothing of this repo leaks into the generated module's build.
+          dotnet new platform-module-ca -n Billing -o "$RUNNER_TEMP/Module.Billing"
+
+      - name: Build the module
+        working-directory: ${{ runner.temp }}/Module.Billing
+        run: dotnet build ModularBlazor.Module.Billing.slnx -c Release
+
+      - name: Test the module
+        working-directory: ${{ runner.temp }}/Module.Billing
+        run: dotnet test ModularBlazor.Module.Billing.slnx -c Release --no-build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: template-package
+          path: artifacts/*.nupkg
